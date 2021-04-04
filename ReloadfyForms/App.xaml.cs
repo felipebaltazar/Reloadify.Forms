@@ -1,5 +1,4 @@
-﻿
-using Reloadify.Forms;
+﻿using Reloadify.Forms;
 using Xamarin.Forms;
 
 namespace ReloadfyForms

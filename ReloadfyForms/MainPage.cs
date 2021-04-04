@@ -1,37 +1,41 @@
-﻿using Xamarin.Forms;
+﻿using Reloadify.Forms;
+using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using Xamarin.Forms;
 
 namespace ReloadfyForms
 {
-    public class MainPage : ContentPage
+    public partial class MainPage : ContentPage
     {
         public MainPage()
         {
-			BuildView();
-			BindingContext = new MainPageViewModel();
+            BuildView();
+            BindingContext = new MainPageViewModel();
         }
 
         private void BuildView()
         {
-			var label = new Label()
-			{
-				TextColor = Color.Black,
-				FontAttributes = FontAttributes.Bold,
-				VerticalOptions = LayoutOptions.FillAndExpand,
-				VerticalTextAlignment = TextAlignment.Center,
-				HorizontalOptions = LayoutOptions.Center,
-			};
+            var label = new Label()
+            {
+                TextColor = Color.Black,
+                FontAttributes = FontAttributes.Bold,
+                VerticalOptions = LayoutOptions.FillAndExpand,
+                VerticalTextAlignment = TextAlignment.Center,
+                HorizontalOptions = LayoutOptions.Center,
+            };
 
-			label.SetBinding(Label.TextProperty, "Text");
+            label.SetBinding(Label.TextProperty, "Text");
 
-			Content = new StackLayout()
-			{
-				VerticalOptions = LayoutOptions.FillAndExpand,
-				HorizontalOptions = LayoutOptions.FillAndExpand,
-				Children =
+            Content = new StackLayout()
+            {
+                VerticalOptions = LayoutOptions.FillAndExpand,
+                HorizontalOptions = LayoutOptions.FillAndExpand,
+                Children =
                 {
-					label
+                    label
                 }
-			};
+            };
         }
-	}
+    }
 }
