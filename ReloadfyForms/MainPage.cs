@@ -15,7 +15,7 @@ namespace ReloadfyForms
         {
             var label = new Label()
             {
-                TextColor = Color.Black,
+                TextColor = Color.Blue,
                 FontAttributes = FontAttributes.Bold,
                 VerticalOptions = LayoutOptions.FillAndExpand,
                 VerticalTextAlignment = TextAlignment.Center,

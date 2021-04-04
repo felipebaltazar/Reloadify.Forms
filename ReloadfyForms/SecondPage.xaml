@@ -10,8 +10,10 @@
     <ContentPage.Content>
         <StackLayout>
             <Label
+                FontAttributes="Bold"
                 HorizontalOptions="CenterAndExpand"
                 Text="{Binding Text}"
+                TextColor="Black"
                 VerticalOptions="CenterAndExpand" />
         </StackLayout>
     </ContentPage.Content>

@@ -7,7 +7,7 @@ namespace ReloadfyForms
     {
         public App()
         {
-			HotReload.Enable();
+            HotReload.Register();
             InitializeComponent();
             MainPage = new NavigationPage(new MainPage());
         }

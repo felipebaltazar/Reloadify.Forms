@@ -7,8 +7,8 @@ namespace ReloadfyForms
     public class MainPageViewModel : ObservableObject
     {
         private int counter;
-        private string text = "Hello from viewmodel";
-        private Color backgroundColor = Color.Fuchsia;
+        private string text = "Hello from viewmodel!";
+        private Color backgroundColor = Color.White;
 
         public string Text
         {
