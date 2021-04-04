@@ -1,8 +1,4 @@
-﻿using Reloadify.Forms;
-using System;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using Xamarin.Forms;
+﻿using Xamarin.Forms;
 
 namespace ReloadfyForms
 {
@@ -12,6 +8,7 @@ namespace ReloadfyForms
         {
             BuildView();
             BindingContext = new MainPageViewModel();
+            NavigationPage.SetHasNavigationBar(this, false);
         }
 
         private void BuildView()
@@ -25,7 +22,17 @@ namespace ReloadfyForms
                 HorizontalOptions = LayoutOptions.Center,
             };
 
+            var button = new Button()
+            {
+                Text = "Clique aqui",
+                VerticalOptions = LayoutOptions.End,
+                HorizontalOptions = LayoutOptions.FillAndExpand,
+                BackgroundColor = Color.Silver,
+            };
+
+            button.SetBinding(Button.CommandProperty,"OnButtonClickCommand");
             label.SetBinding(Label.TextProperty, "Text");
+            this.SetBinding(View.BackgroundColorProperty, "BackgroundColor");
 
             Content = new StackLayout()
             {
@@ -33,7 +40,8 @@ namespace ReloadfyForms
                 HorizontalOptions = LayoutOptions.FillAndExpand,
                 Children =
                 {
-                    label
+                    label,
+                    button
                 }
             };
         }

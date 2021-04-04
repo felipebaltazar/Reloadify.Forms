@@ -5,17 +5,17 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Xamarin.Forms;
+using Xamarin.Forms.Internals;
 
 namespace Reloadify.Forms
 {
     public class HotReload
     {
 		private static readonly WeakList<VisualElement> activeViews = new WeakList<VisualElement>();
-
 		private static Dictionary<string, Type> replacedViews = new Dictionary<string, Type>();
 		private static Dictionary<string, Type> replacedBindingContext = new Dictionary<string, Type>();
-		private static Dictionary<VisualElement, object[]> currentViews = new Dictionary<VisualElement, object[]>();
 		private static Dictionary<object, object[]> bindingContextMap = new Dictionary<object, object[]>();
+		private static Dictionary<VisualElement, object[]> currentViews = new Dictionary<VisualElement, object[]>();
 
 		public static void Enable(string ideIp = null, int idePort = 9988)
 		{
@@ -91,7 +91,7 @@ namespace Reloadify.Forms
 
 		public static VisualElement GetReplacedView(VisualElement view)
 		{
-			if (!IsEnabled)
+			if (!IsEnabled || view is null)
 				return view;
 
 			if (!replacedViews.TryGetValue(view.GetType().FullName, out var newViewType))
@@ -109,6 +109,11 @@ namespace Reloadify.Forms
 			{
 				Debug.WriteLine("You are using Reloadify on a view that requires Parameters. Please call `Hotreload.Register(this, params);` in the constructor;");
 				throw ex;
+			}
+            finally
+            {
+				_ = replacedViews.Remove(view.GetType().FullName);
+
 			}
 		}
 
@@ -134,42 +139,52 @@ namespace Reloadify.Forms
 				Debug.WriteLine("You are using Comet.Reload on a view that requires Parameters. Please call `HotReloadHelper.Register(this, params);` in the constructor;");
 				throw ex;
 			}
+            finally
+            {
+				_ = replacedBindingContext.Remove(view.BindingContext?.GetType().FullName);
+			}
 		}
 
 		static void TransferState(VisualElement oldView, VisualElement newView)
 		{
-			var oldState = oldView.BindingContext;
+			var oldState = oldView?.BindingContext;
 			newView.BindingContext = oldState;
 		}
 
 		public static void RegisterReplacedType(string oldType, Type newType)
 		{
-			//if (!IsEnabled || oldViewType == newViewType.FullName)
-			//return;
+            try
+            {
+				if (!IsEnabled)
+					return;
 
-			if (!IsEnabled)
-				return;
+				Console.WriteLine($"{oldType} - {newType}");
 
-			Console.WriteLine($"{oldType} - {newType}");
+				if (newType.IsSubclassOf(typeof(VisualElement)))
+				{
+					if (replacedViews.ContainsKey(oldType))
+						replacedViews[oldType] = newType;
+					else
+						replacedViews.Add(oldType, newType);
+				}
+				else if (typeof(INotifyPropertyChanged).IsAssignableFrom(newType))
+				{
+					if (replacedBindingContext.ContainsKey(oldType))
+						replacedBindingContext[oldType] = newType;
+					else
+						replacedBindingContext.Add(oldType, newType);
+				}
 
-			if (newType.IsSubclassOf(typeof(VisualElement)))
+				//Call static init if it exists on new classes!
+				var staticInit = newType.GetMethod("Init", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public);
+				staticInit?.Invoke(null, null);
+            }
+            catch (Exception ex)
 			{
-				if (replacedViews.ContainsKey(oldType))
-					replacedViews[oldType] = newType;
-				else
-					replacedViews.Add(oldType, newType);
+				Console.WriteLine("### Error on replacing views for HotReload C#");
+				Console.WriteLine(ex.Message);
+				Console.WriteLine(ex.StackTrace);
 			}
-			else if (typeof(INotifyPropertyChanged).IsAssignableFrom(newType))
-			{
-				if (replacedBindingContext.ContainsKey(oldType))
-					replacedBindingContext[oldType] = newType;
-				else
-					replacedBindingContext.Add(oldType, newType);
-			}
-
-			//Call static init if it exists on new classes!
-			var staticInit = newType.GetMethod("Init", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public);
-			staticInit?.Invoke(null, null);
 		}
 
 		public static void TriggerReload()
@@ -184,15 +199,27 @@ namespace Reloadify.Forms
 			{
 				foreach (var bindingContext in replacedBindingContext)
 				{
-					var oldType = bindingContext.Key;
-					var newType = bindingContext.Value;
+                    try
+                    {
+						var oldType = bindingContext.Key;
+						var newType = bindingContext.Value;
 
-					var viewToProcess = activeViews.FirstOrDefault(v => v.BindingContext.GetType().FullName == oldType);
-					if (viewToProcess is null)
-						continue;
+						var viewToProcess = activeViews.FirstOrDefault(v => v.BindingContext.GetType().FullName == oldType);
+						if (viewToProcess is null)
+							continue;
 
-					var newBindingContext = GetReplacedBindingContext(viewToProcess);
-					viewToProcess.BindingContext = newBindingContext;
+						var newBindingContext = GetReplacedBindingContext(viewToProcess);
+						if (newBindingContext is null)
+							continue;
+
+						viewToProcess.BindingContext = newBindingContext;
+                    }
+                    catch (Exception ex)
+					{
+						Console.WriteLine("### Error on replacing views for HotReload C#");
+						Console.WriteLine(ex.Message);
+						Console.WriteLine(ex.StackTrace);
+					}
 				}
 			});
 		}
@@ -204,8 +231,7 @@ namespace Reloadify.Forms
 			{
 				try
 				{
-					roots = activeViews.ToList();
-					//roots = MainPage.ActiveViews.Where(x => x.Parent == null).ToList();
+					roots = activeViews.Where(v=> v != null).ToList();
 				}
 				catch (Exception ex)
 				{
@@ -213,20 +239,61 @@ namespace Reloadify.Forms
 				}
 			}
 
-			Device.BeginInvokeOnMainThread(() =>
+            Device.BeginInvokeOnMainThread(() =>
 			{
 				foreach (var view in roots)
 				{
-					if (view is ContentPage main)
-					{
-						var replaced = GetReplacedView(main) as ContentPage;
-						if (replaced is null)
+                    try
+                    {
+						var replaced = GetReplacedView(view);
+						if (replaced is null || view == replaced)
 							continue;
 
-						main.Content = replaced.Content;
+						var parent = view?.Parent ?? replaced?.Parent;
+						if(parent is Application application)
+						{
+							application.MainPage = replaced as Page;
+						}
+						else if (parent is NavigationPage navPage)
+						{
+							var useModalStack = false;
+							var pageIndex = navPage.Navigation.NavigationStack.IndexOf(p => p == view);
+							if(pageIndex < 0)
+							{
+								pageIndex = navPage.Navigation.ModalStack.IndexOf(p => p == view);
+								useModalStack = true;
+							}
+
+							ResolveForNavigation(navPage.Navigation, view, replaced, pageIndex, useModalStack);
+						}
+
+						activeViews.Replace(view, replaced);
+                    }
+					catch (Exception ex)
+                    {
+						Console.WriteLine("### Error on replacing views for HotReload C#");
+						Console.WriteLine(ex.Message);
+						Console.WriteLine(ex.StackTrace);
 					}
-				}
+                }
 			});
 		}
-	}
+
+        private static void ResolveForNavigation(INavigation navigation, VisualElement view, VisualElement replaced, int pageIndex, bool useModalStack)
+        {
+			navigation.InsertPageBefore(replaced as Page, view as Page);
+			var lastIndex = (useModalStack
+				? navigation.NavigationStack.Count
+				: navigation.NavigationStack.Count) - 1;
+
+
+			if (pageIndex == lastIndex)
+				if (useModalStack)
+					_ = navigation.PopModalAsync();
+				else
+					_ = navigation.PopAsync();
+			else
+				navigation.RemovePage(view as Page);
+        }
+    }
 }

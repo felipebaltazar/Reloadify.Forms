@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Xamarin.Forms;
 
 namespace Reloadify.Forms
 {
@@ -84,5 +85,14 @@ namespace Reloadify.Forms
 					action?.Invoke((T)item.Target);
 			}
 		}
-	}
+
+        public void Replace(VisualElement view, VisualElement replaced)
+        {
+			var weakReference = items.FirstOrDefault(w => w.Target == view);
+			if (weakReference != null)
+				weakReference.Target = replaced;
+			else
+				items.Add(new WeakReference(replaced));
+        }
+    }
 }

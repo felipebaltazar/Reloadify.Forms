@@ -51,6 +51,6 @@ namespace ReloadfyForms
 		/// </summary>
 		/// <param name="propertyName">Property name.</param>
 		protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = "") =>
-			PropertyChanged.Invoke(this, new PropertyChangedEventArgs(propertyName));
+			PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 	}
 }
