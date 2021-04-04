@@ -104,21 +104,21 @@ namespace Reloadify.Forms
 
 			try
 			{
-				if (HasCodegenAttribute(newViewType, out var xamlPath))
-				{
+				//if (HasCodegenAttribute(newViewType, out var xamlPath))
+				//{
 					//var baseObject = BuildBaseType(newViewType);
 					//if (baseObject != null)
      //               {
 					//	// Need a way to read xaml
 					//	newView = global::Xamarin.Forms.Xaml.Extensions.LoadFromXaml(baseObject, xaml);
 					//}
-				}
-				else
-				{
+				//}
+				//else
+				//{
 					newView = (VisualElement)(parameters?.Length > 0
 						? Activator.CreateInstance(newViewType, args: parameters)
 						: Activator.CreateInstance(newViewType));
-				}
+				//}
 
 				if (newView != null)
 					TransferState(view, newView);
